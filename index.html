@@ -34,6 +34,15 @@
         socket.on('chat message', function(msg){
           $('#messages').append($('<li>').text(msg));
         });
+
+        /// -----------------------------------------
+        
+        socket.on('member-in', function(msg){
+          $('#messages').append($('<li>').text(msg));
+        });
+        socket.on('member-out', function(msg){
+          $('#messages').append($('<li>').text(msg));
+        });
       });
     </script>
   </body>
