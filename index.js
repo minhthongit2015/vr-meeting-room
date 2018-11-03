@@ -23,23 +23,38 @@ io.on('connection', function(socket) {
       let rooms = Object.keys(socket.rooms);
     });
 
+    // Nhận được yêu cầu gửi dữ liệu của client
     socket.on("startSync", (frdID) => {
       if (frdID == socket.id) socket.emit("startSync", frdID);
     });
+
+    // Master gửi dữ liệu đến slaver
     socket.on("syncData", (data) => {
       socket.to(socket.id).emit("syncData", data);
+    });
+
+    // Thông báo đã hoàn tất tới master
+    socket.on("syncDataDone", (info) => {
+      if (info.split("~")[0] == socket.id) socket.emit("syncDataDone", info);
     });
 
   });
 
   // Slave
   socket.on('syncWith', function(frdID) {
+    // Gửi yêu cầu tới master
     socket.join(frdID, (err) => {
       socket.to(frdID).emit("startSync", frdID);
     });
     
+    // Nhận được dữ liệu từ master
     socket.on("syncData", (data) => {
       socket.emit("syncData", data);
+    });
+
+    // Thông báo đã nhận xong đến master
+    socket.on("notifyOK", (info) => {
+      socket.to(info.split("~")[0]).emit("syncDataDone", info);
     });
   });
 
