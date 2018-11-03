@@ -9,8 +9,41 @@ app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
 
-io.on('connection', function(socket){
+io.on('connection', function(socket) {
   console.log('a user connected: ');
+
+  /// Chừa ra một phần cho IUH SP
+
+  socket.on('getID', function(info) {
+    socket.name = info;
+    socket.emit("setID", socket.id);
+
+    // Tạo room cho riêng mình
+    socket.join(socket.id, (err) => {
+      let rooms = Object.keys(socket.rooms);
+    });
+
+    socket.on("startSync", (frdID) => {
+      if (frdID == socket.id) socket.emit("startSync", frdID);
+    });
+    socket.on("syncData", (data) => {
+      socket.to(socket.id).emit("syncData", data);
+    });
+
+  });
+
+  // Slave
+  socket.on('syncWith', function(frdID) {
+    socket.join(frdID, (err) => {
+      socket.to(frdID).emit("startSync", frdID);
+    });
+    
+    socket.on("syncData", (data) => {
+      socket.emit("syncData", data);
+    });
+  });
+
+  ///
 
   socket.on('disconnect', function(info) {
     console.log('user disconnected: ', info);
