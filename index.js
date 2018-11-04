@@ -14,51 +14,44 @@ io.on('connection', function(socket) {
 
   /// Chừa ra một phần cho IUH SP
 
+
+  /************************************ Side 1 ************************************/
+
+  // [Side 1] Tạo room cho riêng mình
+  // socket.join(socket.id, (err) => {
+  //   let rooms = Object.keys(socket.rooms);
+  // });
+
+  // [Side 1] Xử ký sự kiện: Lấy ID để chia sẻ
   socket.on('getID', function(info) {
     socket.name = info;
     socket.emit("setID", socket.id);
-
-    // Tạo room cho riêng mình
-    socket.join(socket.id, (err) => {
-      let rooms = Object.keys(socket.rooms);
-    });
-
-    // Nhận được yêu cầu gửi dữ liệu của client
-    socket.on("startSync", (frdID) => {
-      if (frdID == socket.id) socket.emit("startSync", frdID);
-    });
-
-    // Master gửi dữ liệu đến slaver
-    socket.on("syncData", (data) => {
-      socket.to(socket.id).emit("syncData", data);
-    });
-
-    // Thông báo đã hoàn tất tới master
-    socket.on("syncDataDone", (info) => {
-      if (info.split("~")[0] == socket.id) socket.emit("syncDataDone", info);
-    });
-
   });
 
-  // Slave
+  // [Side 1] Xử lý trung chuyển dữ liệu từ Master tới các Friend (trong room)
+  socket.on("syncData", (frdID, data) => { // Dữ liệu xuất phát từ máy Master
+    socket.broadcast.to(frdID).emit("syncDataRecv", socket.id, data);
+  });
+
+
+  /************************************ Side 2 ************************************/
+
+  // [Side 2] Xử lý sự kiện yêu cầu dữ liệu từ friend
   socket.on('syncWith', function(frdID) {
     // Gửi yêu cầu tới master
-    socket.join(frdID, (err) => {
-      socket.to(frdID).emit("startSync", frdID);
-    });
-    
-    // Nhận được dữ liệu từ master
-    socket.on("syncData", (data) => {
-      socket.emit("syncData", data);
-    });
-
-    // Thông báo đã nhận xong đến master
-    socket.on("notifyOK", (info) => {
-      socket.to(info.split("~")[0]).emit("syncDataDone", info);
-    });
+    socket.broadcast.to(frdID).emit("startSync", frdID, socket.id);
   });
 
+  // [Side 2] Thông báo đã nhận xong đến master
+  socket.on("notifyOK", (masterID, slaverName) => {
+    socket.broadcast.to(masterID).emit("syncDataDone", slaverName);
+  });
+
+
   ///
+
+
+
 
   socket.on('disconnect', function(info) {
     console.log('user disconnected: ', info);
